@@ -4,14 +4,11 @@
 
 
 # from zoneinfo import available_timezones
-from audioop import mul
-from threading import currentThread
 from pacai.core.directions import Directions
 from pacai.student.searchAgents import ClosestDotSearchAgent
 from pacai.agents.base import BaseAgent
 from pacai.agents.search.multiagent import MultiAgentSearchAgent
 from pacai.core.distance import manhattan
-import math
 
 
 class ReflexAgent(BaseAgent):
@@ -278,7 +275,6 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         # value <- max(value, minValue from the ghosts' positions)
         actions = self.__getLegalActions__(gameState, pacman)
         for action in actions:
-            print("here")
             if action == 'Stop':
                 continue
             successor = gameState.generateSuccessor(
@@ -519,31 +515,21 @@ def scaredyCatPacman(successorGameState):
     # weakness trapped between 2 ghosts
     # get PacMan's and ghosts' positions
     newPosition = successorGameState.getPacmanPosition()
-    ghostStates = successorGameState.getGhostStates()
     ghostIndicies = successorGameState.getGhostIndexes()
     ghostPositions = [successorGameState.getGhostPosition(
         agentIndex) for agentIndex in ghostIndicies]
 
     # find distance between pacman and ghosts
-    pacDist = []
-    i = 0
-    for ghost in ghostStates:
-        pacDist.append(manhattan(newPosition, ghostPositions[i]))
-        i += 1
-
-    # pacDist = [manhattan(newPosition, gPos) for gPos in ghostPositions]
+    pacDist = [manhattan(newPosition, gPos) for gPos in ghostPositions]
 
     # return sum of pacman's score and distance between closest ghost
-    if len(pacDist) == 0:
-        return 1
     safestDistance = min(pacDist)
-    
     # safestDistance = 1/min(pacDist)
     # safestDistance = safestDistance
     return safestDistance
 
 
-def distanceToClosestFood(currentGameState):
+def distanceToClosestFood(currentGameState, successorGameState):
     # turn the food matrix into list of coordinates
     # iterate the list
     # if coord
@@ -562,8 +548,6 @@ def distanceToClosestFood(currentGameState):
         return float("inf")
 
     return dis
-
-
 def distanceToWall(currentGameState):
     # turn the food matrix into list of coordinates
     # iterate the list
@@ -580,7 +564,6 @@ def distanceToWall(currentGameState):
             if walls[x][y]:
                 dis = min(dis, manhattan(pacLoc, (x, y)))
     return dis
-
 
 def moveOptions(currentGameState):
     moves = len(currentGameState.getLegalActions(0))
@@ -599,7 +582,6 @@ def adjecentFood(currentGameState):
             food += 1
     return food
 
-
 def nearbyCapsule(currentGameState):
     pacman = 0
     actions = currentGameState.getLegalActions(pacman)
@@ -610,23 +592,9 @@ def nearbyCapsule(currentGameState):
             return float("inf")
     return 0
 
-
 closet = ClosestDotSearchAgent(0)
 
-def scaredGhostsTime(currentGameState):
-    ghostStates = currentGameState.getGhostStates()
-    time = 0
-    for ghost in ghostStates:
-        time += ghost.getScaredTimer()
-    return time
 
-def getScoreScale(score):
-    if score == -float("inf") or score == float("inf") or int(score) <= 0:
-        return 1
-    return int(math.log10(score))
-def multiplier(score,reduce):
-    scale = getScoreScale(score)
-    return (10 ** (scale-reduce))
 def betterEvaluationFunction(currentGameState):
     """
     Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable evaluation function.
@@ -644,60 +612,13 @@ def betterEvaluationFunction(currentGameState):
     # newGhostStates = successorGameState.getGhostStates()
     # ghostIndicies = successorGameState.getGhostIndexes()
     # amplifies affect of food distance
-    hunger = 20
-    numMoves = moveOptions(currentGameState)
-    # Scaredy-cat pacman: Focuses on avoiding ghost
-    safestDistance = scaredyCatPacman(successorGameState)
-    # Find distance to closest food
-    closestFood = distanceToClosestFood(
-        currentGameState)
-    numFood = currentGameState.getNumFood()
-    scaredTime = scaredGhostsTime(currentGameState)
-    pacLoc = successorGameState.getPacmanPosition()
-    """ if numFood == 0:
-        numFood = float("inf")
-    else:
-        numFood = 1 / numFood
-    # numMoves = moveOptions(currentGameState)
-    # foodNextToPacman = adjecentFood(currentGameState)
-    # safe distance from ghost +(increase distance to ghost)
-    # distance from food -(decrease distance to food)
-    # eating where there's no food -(decrease the amount of no food)
-    # movement options +(increase movement options)
-    # getScore()
-    # score = fear * safestDistance
-    # if safestDistance > 2:
-    #     score = fear * safestDistance
-    #     score -= hunger * closestFood * numFood
-    # score += nearbyCapsule(currentGameState)
-    # score += foodNextToPacman * hunger
-    # score *= numMoves
-    score = successorGameState.getScore()
-    scale = 1
-    if score != 0:
-        scale = int(math.log10(score))
-    score = score / multiplier(score, 1)
-    if numMoves > 2:
-        score += numMoves * safestDistance * multiplier(score,1)
-    else:
-        score -= numMoves * safestDistance * multiplier(score,1)
-
-    score += scaredTime
-    score += nearbyCapsule(currentGameState)
-    
-    if not currentGameState.hasFood(pacLoc[0],pacLoc[1]):
-        score -= 10 * multiplier(score,2)
-
-    if safestDistance > 2 or scaredTime > 0:
-        score -= hunger * closestFood * numFood * multiplier(score,2)
-    score = successorGameState.getScore()"""
     hunger = 10
     numMoves = moveOptions(currentGameState)
     # Scaredy-cat pacman: Focuses on avoiding ghost
     safestDistance = scaredyCatPacman(successorGameState)
     # Find distance to closest food
     closestFood = distanceToClosestFood(
-        currentGameState)
+        currentGameState, successorGameState)
     numFood = currentGameState.getNumFood()
     if numFood == 0:
         numFood = float("inf")
@@ -722,6 +643,8 @@ def betterEvaluationFunction(currentGameState):
     if safestDistance > 2:
         # score -= distanceToWall(currentGameState)
         score -= hunger * closestFood * numFood
+    # score = 0
+    # print(score)
     return score
     # return currentGameState.getScore()
 
